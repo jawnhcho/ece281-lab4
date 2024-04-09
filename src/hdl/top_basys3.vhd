@@ -92,21 +92,80 @@ end top_basys3;
 architecture top_basys3_arch of top_basys3 is 
   
 	-- declare components and signals
-
-  
+	
+	component elevator_controller_fsm is
+	    Port ( i_clk     : in  STD_LOGIC;
+           i_reset   : in  STD_LOGIC;
+           i_stop    : in  STD_LOGIC;
+           i_up_down : in  STD_LOGIC;
+           o_floor   : out STD_LOGIC_VECTOR (3 downto 0)           
+         );
+	end component elevator_controller_fsm;
+	
+	component sevenSegDecoder is
+        port (
+        i_D : in std_logic_vector(3 downto 0); -- make into vectors
+        o_S : out std_logic_vector(6 downto 0)
+        );
+	end component sevenSegDecoder;
+	
+    component clock_divider is
+        generic ( constant k_DIV : natural := 2    ); -- How many clk cycles until slow clock toggles
+        port (  i_clk    : in std_logic;
+            i_reset  : in std_logic;           -- asynchronous
+            o_clk    : out std_logic           -- divided (slow) clock
+        );
+    end component clock_divider;
+    
+    --type sm_floor is (s_floor1, s_floor2, s_floor3, s_floor4);
+    signal w_clk : std_logic;
+    signal w_floor: std_logic_vector (3 downto 0); -- I'm thinking about doing one hot because it would be easier to differentiate in the code
+    signal w_S: std_logic_vector (6 downto 0); -- Once again one hot encoding so that it is easier to see the code and write it instead of using binary
+    signal w_btnR, w_btnL: std_logic;
+        
+    
+    
+    
 begin
 	-- PORT MAPS ----------------------------------------
-
+    elevator_controller_inst : elevator_controller_fsm 
+        port map(
+        i_clk => w_clk,
+        i_reset => w_btnR,
+        i_stop => sw(0),
+        i_up_down => sw(1),
+        o_floor => w_floor
+        );
 	
+	seven_seg_decoder_inst : sevenSegDecoder
+	   port map(
+	   i_D => w_floor,
+	   o_S => w_S
+	   );
+	   
+	clkdiv_inst : clock_divider 		--instantiation of clock_divider to take 
+       generic map ( k_DIV => 12500000 ) -- 1 Hz clock from 100 MHz
+       port map (                          
+       i_clk   => clk,
+       i_reset => w_btnL,
+       o_clk   => w_clk 
+       );  
 	
 	-- CONCURRENT STATEMENTS ----------------------------
 	
-	-- LED 15 gets the FSM slow clock signal. The rest are grounded.
+	w_btnR <= btnR or btnU;
+	w_btnL <= btnL or btnU;
 	
+	-- LED 15 gets the FSM slow clock signal. The rest are grounded.
+	led(14 downto 0) <= (others => '0');
 
 	-- leave unused switches UNCONNECTED. Ignore any warnings this causes.
-	
+	sw(15 downto 2) <= (others => '0');
 	-- wire up active-low 7SD anodes (an) as required
+    an(0) <= '1';
+    an(1) <= '1';
+    an(2) <= '1';
+    an(3) <= '1';
 	-- Tie any unused anodes to power ('1') to keep them off
 	
 end top_basys3_arch;
