@@ -120,7 +120,7 @@ architecture top_basys3_arch of top_basys3 is
     --type sm_floor is (s_floor1, s_floor2, s_floor3, s_floor4);
     signal w_clk : std_logic;
     signal w_floor: std_logic_vector (3 downto 0); -- I'm thinking about doing one hot because it would be easier to differentiate in the code
-    signal w_S: std_logic_vector (6 downto 0); -- Once again one hot encoding so that it is easier to see the code and write it instead of using binary
+    --signal w_S: std_logic_vector (6 downto 0); -- Once again one hot encoding so that it is easier to see the code and write it instead of using binary
     signal w_btnR, w_btnL: std_logic;
         
     
@@ -140,31 +140,33 @@ begin
 	seven_seg_decoder_inst : sevenSegDecoder
 	   port map(
 	   i_D => w_floor,
-	   o_S => w_S
+	   o_S => seg
 	   );
 	   
 	clkdiv_inst : clock_divider 		--instantiation of clock_divider to take 
-       generic map ( k_DIV => 12500000 ) -- 1 Hz clock from 100 MHz
+       generic map ( k_DIV => 25000000 ) -- 1 Hz clock from 100 MHz
        port map (                          
        i_clk   => clk,
        i_reset => w_btnL,
        o_clk   => w_clk 
        );  
+       
+       -- find out how to connect o_clk with led(15)
 	
 	-- CONCURRENT STATEMENTS ----------------------------
 	
 	w_btnR <= btnR or btnU;
 	w_btnL <= btnL or btnU;
+	led(15) <= w_clk;
 	
 	-- LED 15 gets the FSM slow clock signal. The rest are grounded.
 	led(14 downto 0) <= (others => '0');
 
 	-- leave unused switches UNCONNECTED. Ignore any warnings this causes.
-	sw(15 downto 2) <= (others => '0');
 	-- wire up active-low 7SD anodes (an) as required
     an(0) <= '1';
     an(1) <= '1';
-    an(2) <= '1';
+    an(2) <= '0';
     an(3) <= '1';
 	-- Tie any unused anodes to power ('1') to keep them off
 	
